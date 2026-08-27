@@ -6,18 +6,18 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: '莊園角色檔案 | 第五人格角色介紹',
-  description: '精選《第五人格》求生者與監管者，瀏覽角色背景、核心能力與玩法定位。',
+  title: 'Garden Study | IMG2THREEJS',
+  description: '以程式生成的 Three.js 花園場景，從單張參考圖開始重建。',
   openGraph: {
-    title: '莊園角色檔案',
-    description: '推開莊園的門，讀懂每一段執念。',
+    title: 'Garden Study | IMG2THREEJS',
+    description: '從一張朦朧截圖拆出可旋轉的程序化場景。',
     type: 'website',
-    images: [{ url: '/og.png', width: 1536, height: 1024, alt: '莊園角色檔案' }],
+    images: [{ url: '/og.png', width: 1536, height: 1024, alt: 'Garden Study' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '莊園角色檔案',
-    description: '精選《第五人格》角色背景、能力與玩法定位。',
+    title: 'Garden Study | IMG2THREEJS',
+    description: '程序化 Three.js 花園場景。',
     images: ['/og.png'],
   },
 };
