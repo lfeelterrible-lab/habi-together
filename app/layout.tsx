@@ -6,25 +6,25 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Garden Study | IMG2THREEJS',
-  description: '以程式生成的 Three.js 花園場景，從單張參考圖開始重建。',
+  title: 'Temporal Archive / Scene 01',
+  description: 'An interactive WebGL study in time, depth, and memory.',
   openGraph: {
-    title: 'Garden Study | IMG2THREEJS',
-    description: '從一張朦朧截圖拆出可旋轉的程序化場景。',
+    title: 'Temporal Archive / Scene 01',
+    description: 'An interactive WebGL study in time, depth, and memory.',
     type: 'website',
-    images: [{ url: '/og.png', width: 1536, height: 1024, alt: 'Garden Study' }],
+    images: [{ url: '/og.png', width: 1536, height: 1024, alt: 'Temporal Archive' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Garden Study | IMG2THREEJS',
-    description: '程序化 Three.js 花園場景。',
+    title: 'Temporal Archive / Scene 01',
+    description: 'An interactive WebGL study in time, depth, and memory.',
     images: ['/og.png'],
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant">
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
