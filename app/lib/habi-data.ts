@@ -107,6 +107,11 @@ function readCookie(request: Request, name: string) {
   return pair ? decodeURIComponent(pair.slice(name.length + 1)) : null;
 }
 
+function safeHeaderId(value: string | null) {
+  const normalized = value?.trim() || '';
+  return /^[A-Za-z0-9_-]{8,80}$/.test(normalized) ? normalized : null;
+}
+
 function cookieValue(value: string) {
   return encodeURIComponent(value);
 }
@@ -148,15 +153,16 @@ function initialsFor(name: string) {
 function getIdentity(request: Request) {
   const platformUserId = request.headers.get('oai-authenticated-user-id')?.trim() || null;
   const email = request.headers.get('oai-authenticated-user-email')?.trim() || null;
+  const headerUserId = safeHeaderId(request.headers.get('x-habi-user-id'));
   const cookieUserId = readCookie(request, USER_COOKIE);
-  const userId = platformUserId || cookieUserId || crypto.randomUUID();
+  const userId = platformUserId || headerUserId || cookieUserId || crypto.randomUUID();
   const displayName = cleanName(safeDecodeName(request), platformUserId ? '你' : '你');
   return {
     userId,
     displayName,
     email,
     platformIdentity: Boolean(platformUserId),
-    setUserCookie: !platformUserId && !cookieUserId,
+    setUserCookie: !platformUserId && !headerUserId && !cookieUserId,
   };
 }
 
@@ -218,7 +224,11 @@ export async function getSession(request: Request): Promise<Session> {
   await initializeDatabase(db);
   const identity = getIdentity(request);
   const roomCookie = readCookie(request, ROOM_COOKIE);
-  let roomId = roomCookie;
+  const requestedRoomCode = request.headers.get('x-habi-room-code')?.trim().toUpperCase() || null;
+  const requestedRoom = requestedRoomCode
+    ? await db.prepare('SELECT id FROM rooms WHERE code = ?').bind(requestedRoomCode).first<{ id: string }>()
+    : null;
+  let roomId = requestedRoom?.id ?? roomCookie;
   let setRoomCookie = false;
 
   if (!roomId || !(await findMember(db, roomId, identity.userId))) {

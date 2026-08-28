@@ -29,6 +29,23 @@ type IconName =
 type ViewName = 'today' | 'garden' | 'pair' | 'journal';
 type Task = HabiTask;
 
+type HabiRuntimeConfig = {
+  apiOrigin?: string;
+  basePath?: string;
+};
+
+const runtimeConfig = typeof window !== 'undefined'
+  ? (window as Window & { __HABI_RUNTIME__?: HabiRuntimeConfig }).__HABI_RUNTIME__ ?? {}
+  : {};
+const HABI_API_ORIGIN = runtimeConfig.apiOrigin?.replace(/\/$/, '') ?? '';
+const HABI_PUBLIC_BASE_PATH = runtimeConfig.basePath?.replace(/\/$/, '') ?? '';
+const HABI_USER_STORAGE_KEY = 'habi_together_user_id';
+const HABI_ROOM_STORAGE_KEY = 'habi_together_room_code';
+
+function publicAsset(path: string) {
+  return `${HABI_PUBLIC_BASE_PATH}${path}`;
+}
+
 const INITIAL_TASKS: Task[] = HABIT_TASKS.map(({ id, title, detail, category, icon }) => ({
   id,
   title,
@@ -47,9 +64,9 @@ const NAV_ITEMS: Array<{ id: ViewName; label: string; hint: string; icon: IconNa
 ];
 
 const GROWTH_SNAPSHOTS = [
-  { image: '/images/growth-snapshot-01.jpg', stage: '01 / 起点', title: '找到一点动力', note: '第一轮专注完成 · 87 XP' },
-  { image: '/images/growth-snapshot-02.jpg', stage: '02 / 进行中', title: '今天也在发光', note: '一起完成 · 100% 准确' },
-  { image: '/images/growth-snapshot-03.jpg', stage: '03 / 长出新叶', title: '把好事继续下去', note: '共同连续 · 第 14 天' },
+  { image: publicAsset('/images/growth-snapshot-01.jpg'), stage: '01 / 起点', title: '找到一点动力', note: '第一轮专注完成 · 87 XP' },
+  { image: publicAsset('/images/growth-snapshot-02.jpg'), stage: '02 / 进行中', title: '今天也在发光', note: '一起完成 · 100% 准确' },
+  { image: publicAsset('/images/growth-snapshot-03.jpg'), stage: '03 / 长出新叶', title: '把好事继续下去', note: '共同连续 · 第 14 天' },
 ];
 
 function Icon({ name, size = 18, strokeWidth = 1.8 }: { name: IconName; size?: number; strokeWidth?: number }) {
@@ -180,7 +197,7 @@ function GardenWorld({ progress, plantStage, plantLabel, roomCode, lastWateredLa
     event.currentTarget.style.setProperty('--garden-shift-x', '0px');
     event.currentTarget.style.setProperty('--garden-shift-y', '0px');
   };
-  return <section className={`garden-card ${watered ? 'is-watered' : ''}`} aria-labelledby="garden-card-title" onPointerMove={handlePointerMove} onPointerLeave={resetPointer}><div className="garden-image" /><div className="garden-vignette" /><div className="garden-grid" /><div className="garden-light garden-light-one" /><div className="garden-light garden-light-two" /><div className="garden-topline"><div className="garden-status"><span className="live-dot" /> {partnerOnline ? '双人实时同步中' : '等待对方上线'}</div><div className="garden-room">{roomCode} <strong>·</strong></div></div><div className="garden-marker garden-marker-one"><span className="marker-dot" /><div><small>NEW LEAF</small><strong>{plantLabel}</strong></div></div><div className="garden-marker garden-marker-two"><span className="marker-dot marker-dot-clay" /><div><small>LAST WATERED</small><strong>{lastWateredLabel} · {partnerOnline ? '你们俩' : '等待记录'}</strong></div></div><div className="garden-compass"><span>N</span><i /></div><div className="garden-bottom-copy"><p className="garden-eyebrow"><span className="kicker-line" /> 共同的生长空间</p><h2 id="garden-card-title">房间里，<em>有光。</em></h2><p className="garden-subtitle">每完成一项，花园都会替你们记住。</p><div className="garden-progress-row"><span>今日养分</span><span><strong>{progress}%</strong> / 100</span></div><div className="garden-progress"><span style={{ width: `${progress}%` }} /></div></div><div className="garden-actions"><button className={`garden-water-button ${watered ? 'is-active' : ''}`} type="button" disabled={disabled} onClick={onWater}><Icon name="water" size={17} /><span>{watered ? '水已送达' : '一起浇水'}</span><Icon name="arrow" size={15} /></button><button className="garden-mood-button" type="button" aria-label="切换花园氛围" onClick={() => setGardenMood(gardenMood === 'calm' ? 'night' : 'calm')}><span className={`mood-swatch mood-${gardenMood}`} /><span>{gardenMood === 'calm' ? '柔光' : '夜色'}</span></button></div><div className="plant-status-card"><div className="plant-status-art"><PlantFigure /></div><div className="plant-status-copy"><span className="mini-label">LEMON BALM · STAGE {plantStage}</span><strong>{plantLabel}</strong><span>{progress}% 距离下一阶段</span></div><div className="plant-ring" style={{ '--plant-progress': `${progress * 3.6}deg` } as CSSProperties}><span>{progress}</span></div></div><span className="garden-partner-label">{partnerName === '等待伙伴' ? '房间码可分享给伙伴' : `${partnerName} 的花园也在这里`}</span></section>;
+  return <section className={`garden-card ${watered ? 'is-watered' : ''}`} style={{ '--garden-image': `url(${publicAsset('/images/duolingo-bird.jpg')})` } as CSSProperties} aria-labelledby="garden-card-title" onPointerMove={handlePointerMove} onPointerLeave={resetPointer}><div className="garden-image" /><div className="garden-vignette" /><div className="garden-grid" /><div className="garden-light garden-light-one" /><div className="garden-light garden-light-two" /><div className="garden-topline"><div className="garden-status"><span className="live-dot" /> {partnerOnline ? '双人实时同步中' : '等待对方上线'}</div><div className="garden-room">{roomCode} <strong>·</strong></div></div><div className="garden-marker garden-marker-one"><span className="marker-dot" /><div><small>NEW LEAF</small><strong>{plantLabel}</strong></div></div><div className="garden-marker garden-marker-two"><span className="marker-dot marker-dot-clay" /><div><small>LAST WATERED</small><strong>{lastWateredLabel} · {partnerOnline ? '你们俩' : '等待记录'}</strong></div></div><div className="garden-compass"><span>N</span><i /></div><div className="garden-bottom-copy"><p className="garden-eyebrow"><span className="kicker-line" /> 共同的生长空间</p><h2 id="garden-card-title">房间里，<em>有光。</em></h2><p className="garden-subtitle">每完成一项，花园都会替你们记住。</p><div className="garden-progress-row"><span>今日养分</span><span><strong>{progress}%</strong> / 100</span></div><div className="garden-progress"><span style={{ width: `${progress}%` }} /></div></div><div className="garden-actions"><button className={`garden-water-button ${watered ? 'is-active' : ''}`} type="button" disabled={disabled} onClick={onWater}><Icon name="water" size={17} /><span>{watered ? '水已送达' : '一起浇水'}</span><Icon name="arrow" size={15} /></button><button className="garden-mood-button" type="button" aria-label="切换花园氛围" onClick={() => setGardenMood(gardenMood === 'calm' ? 'night' : 'calm')}><span className={`mood-swatch mood-${gardenMood}`} /><span>{gardenMood === 'calm' ? '柔光' : '夜色'}</span></button></div><div className="plant-status-card"><div className="plant-status-art"><PlantFigure /></div><div className="plant-status-copy"><span className="mini-label">LEMON BALM · STAGE {plantStage}</span><strong>{plantLabel}</strong><span>{progress}% 距离下一阶段</span></div><div className="plant-ring" style={{ '--plant-progress': `${progress * 3.6}deg` } as CSSProperties}><span>{progress}</span></div></div><span className="garden-partner-label">{partnerName === '等待伙伴' ? '房间码可分享给伙伴' : `${partnerName} 的花园也在这里`}</span></section>;
 }
 
 function PairPulse({ streakDays, partnerOnline, partnerName, onNavigate }: { streakDays: number; partnerOnline: boolean; partnerName: string; onNavigate: (view: ViewName) => void }) {
@@ -242,11 +259,27 @@ function JournalView({ entries, isSaving, onNotify, onCreateJournal }: { entries
   return <><ViewHeader eyebrow="成长日记 · 共同记录" title={<>把那些<em>微小的好事</em>留下来。</>} description="习惯不是一条直线，是你们一起走过的许多片刻。" action="写下今天" onAction={() => document.getElementById('journal-title')?.focus()} /><div className="journal-layout"><section className="journal-card surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 最近发生</p><h2>你们的共同时间线</h2></div><span className="mini-label">{entries.length} ENTRIES</span></div><div className="journal-list">{entries.length ? entries.map((entry) => <article className="journal-entry" key={entry.id}><span className={`journal-node node-${entry.tone}`} /><div><span className="journal-date">{formatJournalDate(entry.createdAt)} · {entry.authorName}</span><h3>{entry.title}</h3><p>{entry.text}</p></div><Icon name="chevron" size={17} /></article>) : <div className="empty-journal"><span className="note-sun"><Icon name="seed" size={16} /></span><strong>第一件好事，还等着被记下来。</strong><p>写一句话，保存后它会出现在你们两个人的时间线上。</p></div>}</div></section><aside className="journal-note surface-card"><span className="note-sun"><Icon name="sun" size={16} /></span><p className="section-kicker"><span className="kicker-line" /> 今日提示</p><h2>留一点时间，给正在发生的好事。</h2><p>不必写得完整。一句话、一个瞬间，也足够让未来的你们重新回到今天。</p><form className="journal-form" onSubmit={(event) => { void submit(event); }}><label htmlFor="journal-title">标题<input id="journal-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="今天也一起走到这里" maxLength={80} /></label><label htmlFor="journal-text">记下这一刻<textarea id="journal-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="一句话就够了…" rows={4} maxLength={240} /></label><button className="text-button" type="submit" disabled={isSaving}><span>{isSaving ? '正在保存…' : '保存到共同日记'}</span><Icon name="arrow" size={15} /></button></form></aside></div></>;
 }
 
+function externalHeaders() {
+  if (!HABI_API_ORIGIN || typeof window === 'undefined') return {};
+  let userId = window.localStorage.getItem(HABI_USER_STORAGE_KEY);
+  if (!userId) {
+    userId = window.crypto.randomUUID();
+    window.localStorage.setItem(HABI_USER_STORAGE_KEY, userId);
+  }
+  const roomCode = window.localStorage.getItem(HABI_ROOM_STORAGE_KEY);
+  return {
+    'X-Habi-User-Id': userId,
+    ...(roomCode ? { 'X-Habi-Room-Code': roomCode } : {}),
+  };
+}
+
 async function requestHabiState(path: string, options?: RequestInit) {
-  const response = await fetch(path, { ...options, cache: 'no-store', headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) } });
+  const response = await fetch(`${HABI_API_ORIGIN}${path}`, { ...options, cache: 'no-store', credentials: HABI_API_ORIGIN ? 'include' : 'same-origin', headers: { 'Content-Type': 'application/json', ...externalHeaders(), ...(options?.headers ?? {}) } });
   const payload = await response.json() as HabiState | { error?: string };
   if (!response.ok) throw new Error('error' in payload && payload.error ? payload.error : '连接花园数据失败。');
-  return payload as HabiState;
+  const next = payload as HabiState;
+  if (HABI_API_ORIGIN && typeof window !== 'undefined' && next.room?.code) window.localStorage.setItem(HABI_ROOM_STORAGE_KEY, next.room.code);
+  return next;
 }
 
 export default function HabiTogether() {

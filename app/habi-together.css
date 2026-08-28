@@ -242,7 +242,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
 .garden-vignette,
 .garden-grid,
 .garden-light { position: absolute; inset: 0; pointer-events: none; }
-.garden-image { z-index: -4; background: url('/images/duolingo-bird.jpg') center 42% / cover no-repeat; filter: saturate(0.96) brightness(0.88) sepia(0.14) contrast(0.98); transform: translate3d(var(--garden-shift-x), var(--garden-shift-y), 0) scale(1.07); transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1), filter 300ms ease; }
+.garden-image { z-index: -4; background: var(--garden-image, url('/images/duolingo-bird.jpg')) center 42% / cover no-repeat; filter: saturate(0.96) brightness(0.88) sepia(0.14) contrast(0.98); transform: translate3d(var(--garden-shift-x), var(--garden-shift-y), 0) scale(1.07); transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1), filter 300ms ease; }
 .garden-card.is-watered .garden-image { filter: saturate(1) brightness(0.96) sepia(0.1) contrast(0.97); }
 .garden-vignette { z-index: -3; background: radial-gradient(circle at 67% 17%, rgba(255, 217, 164, 0.34), transparent 28%), radial-gradient(circle at 18% 73%, rgba(248, 177, 128, 0.19), transparent 32%), linear-gradient(180deg, rgba(83, 49, 37, 0.28), rgba(111, 67, 49, 0.05) 38%, rgba(62, 37, 31, 0.7) 100%), linear-gradient(90deg, rgba(83, 49, 37, 0.34), transparent 52%, rgba(70, 41, 33, 0.2)); }
 .garden-grid { z-index: -2; opacity: 0.1; background-image: linear-gradient(rgba(255, 231, 202, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 231, 202, 0.2) 1px, transparent 1px); background-size: 44px 44px; mask-image: linear-gradient(180deg, black, transparent 78%); }
