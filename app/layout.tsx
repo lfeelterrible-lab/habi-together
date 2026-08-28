@@ -5,15 +5,28 @@ import './habi-together.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const siteUrl = 'https://identity-v-character-archive.smoky-mint-8739.chatgpt.site';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'HabiTogether — 一起，把日子种好',
-  description: 'A shared habit garden for two people who want to grow together.',
+  description: '给两个人的共同习惯花园：一起打卡、浇水、同步成长。',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'HabiTogether — 一起，把日子种好',
-    description: 'A shared habit garden for two people who want to grow together.',
+    description: '给两个人的共同习惯花园：一起打卡、浇水、同步成长。',
     type: 'website',
-    images: [{ url: '/garden-reference.png', width: 1920, height: 1080, alt: 'A shared garden' }],
+    images: [{ url: '/share-card.svg', width: 1200, height: 630, type: 'image/svg+xml', alt: 'HabiTogether 一起，把日子种好' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HabiTogether — 一起，把日子种好',
+    description: '给两个人的共同习惯花园：一起打卡、浇水、同步成长。',
+    images: ['/share-card.svg'],
   },
 };
 

@@ -1,0 +1,23 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F5EBDD"/>
+  <circle cx="1000" cy="132" r="230" fill="#F0C778" fill-opacity="0.2"/>
+  <circle cx="1080" cy="530" r="210" fill="#D58366" fill-opacity="0.12"/>
+  <path d="M0 530C180 450 286 602 456 526C617 454 676 544 820 500C979 451 1072 503 1200 440V630H0V530Z" fill="#DDE8D2" fill-opacity="0.48"/>
+  <rect x="64" y="64" width="1072" height="502" rx="38" fill="#FFF9F0" fill-opacity="0.76" stroke="#E4CDB8" stroke-width="2"/>
+  <path d="M144 169H174" stroke="#D58366" stroke-width="3" stroke-linecap="round"/>
+  <text x="194" y="178" fill="#8B7668" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="22" letter-spacing="4">SHARED HABIT GARDEN</text>
+  <text x="140" y="302" fill="#3F4D42" font-family="Georgia, 'Songti SC', serif" font-size="76" letter-spacing="-3">HabiTogether</text>
+  <text x="144" y="366" fill="#D58366" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="34">一起，把日子种好。</text>
+  <text x="144" y="425" fill="#7B887B" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="23">双人打卡 · 浇水成长 · 实时同步</text>
+  <g transform="translate(850 177)">
+    <rect width="190" height="190" rx="52" fill="#F8EEDF"/>
+    <circle cx="140" cy="39" r="29" fill="#F0C778" fill-opacity="0.7"/>
+    <path d="M95 149V75" stroke="#58735B" stroke-width="9" stroke-linecap="round"/>
+    <path d="M95 102C69 100 53 86 53 60C80 60 99 75 95 102Z" fill="#91A978"/>
+    <path d="M97 127C124 125 140 110 140 84C113 85 95 100 97 127Z" fill="#6F916C"/>
+    <path d="M95 78C85 62 65 64 65 79C65 95 84 106 95 114C106 106 125 95 125 79C125 64 105 62 95 78Z" fill="#D58366"/>
+  </g>
+  <circle cx="792" cy="437" r="6" fill="#D58366" fill-opacity="0.7"/>
+  <circle cx="1058" cy="430" r="6" fill="#91A978" fill-opacity="0.7"/>
+  <text x="144" y="510" fill="#A3968C" font-family="Arial, 'Microsoft YaHei', sans-serif" font-size="18" letter-spacing="2">MADE FOR TWO · CULTIVATE THE ORDINARY</text>
+</svg>
