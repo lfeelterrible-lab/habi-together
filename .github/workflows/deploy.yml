@@ -1,4 +1,4 @@
-name: Deploy HabiTogether to GitHub Pages
+name: Deploy GeoNote to GitHub Pages
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build static client
+      - name: Build GeoNote static client
         run: pnpm run build:github-pages
       - name: Add nojekyll marker
         run: touch dist/client/.nojekyll
