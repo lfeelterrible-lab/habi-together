@@ -1,0 +1,11 @@
+platform :ios, '15.0'
+
+use_frameworks!
+
+target 'PhoneSender' do
+  pod 'GoogleWebRTC'
+end
+
+target 'PhoneSenderBroadcastUpload' do
+  pod 'GoogleWebRTC'
+end
