@@ -288,9 +288,14 @@ export default function PhoneStudio() {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const bridgeRef = useRef<LivePhoneBridge | null>(null);
-  const roomId = useState(() => createCode('ROOM'))[0];
-  const sessionId = useState(() => createCode('RX'))[0];
   const browserHost = useBrowserHost();
+  const sessionCodes = useMemo(
+    () => browserHost
+      ? { roomId: createCode('ROOM'), sessionId: createCode('RX') }
+      : { roomId: 'ROOM-STUDIO', sessionId: 'RX-STUDIO' },
+    [browserHost],
+  );
+  const { roomId, sessionId } = sessionCodes;
   const signalingUrl = getDefaultSignalingUrl(browserHost || undefined);
   const demoController = useMemo(() => {
     if (mode !== 'demo' || typeof document === 'undefined') return null;
