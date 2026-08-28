@@ -1,7 +1,5 @@
-'use client';
-
-import PhoneStudio from './components/PhoneStudio';
+import HabiTogether from './components/HabiTogether';
 
 export default function Home() {
-  return <PhoneStudio />;
+  return <HabiTogether />;
 }
