@@ -455,6 +455,9 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .pair-pulse { min-height: 200px; }
   .pair-hero,
   .connection-details { min-height: 420px; }
+  .pair-presence-body { align-items: flex-start; flex-direction: column; }
+  .pair-presence-actions { justify-content: flex-start; }
+  .pair-presence-actions > span { text-align: left; }
   .journal-note { min-height: 300px; }
 }
 
@@ -580,6 +583,8 @@ button:disabled { cursor: not-allowed; opacity: 0.56; }
 .pair-join-form input:focus,
 .journal-form input:focus,
 .journal-form textarea:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(96, 123, 98, 0.11); }
+.pair-join-form input[aria-invalid='true'] { border-color: var(--clay); box-shadow: 0 0 0 3px rgba(213, 131, 102, 0.11); }
+.form-error { margin: -2px 0 0; color: #a55f4b; font-size: 9px; line-height: 1.5; }
 .pair-join-form .dark-action { margin-top: 3px; }
 .connection-details > .dark-action { margin-top: 20px; }
 .connection-events { display: grid; gap: 0; margin-top: 22px; }

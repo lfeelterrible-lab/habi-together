@@ -41,6 +41,7 @@ const HABI_API_ORIGIN = runtimeConfig.apiOrigin?.replace(/\/$/, '') ?? '';
 const HABI_PUBLIC_BASE_PATH = runtimeConfig.basePath?.replace(/\/$/, '') ?? '';
 const HABI_USER_STORAGE_KEY = 'habi_together_user_id';
 const HABI_ROOM_STORAGE_KEY = 'habi_together_room_code';
+const ROOM_CODE_PATTERN = /^[A-Z0-9]{3,8}-[A-Z0-9]{3,8}$/;
 
 function publicAsset(path: string) {
   return `${HABI_PUBLIC_BASE_PATH}${path}`;
@@ -49,7 +50,7 @@ function publicAsset(path: string) {
 function inviteCodeFromUrl() {
   if (typeof window === 'undefined') return '';
   const code = new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() ?? '';
-  return /^[A-Z0-9]{3,8}-[A-Z0-9]{3,8}$/.test(code) ? code : '';
+  return ROOM_CODE_PATTERN.test(code) ? code : '';
 }
 
 function inviteUrl(roomCode: string) {
@@ -61,12 +62,28 @@ function inviteUrl(roomCode: string) {
 }
 
 async function copyToClipboard(value: string) {
-  if (!value || typeof navigator === 'undefined' || !navigator.clipboard) return false;
+  if (!value || typeof document === 'undefined') return false;
   try {
-    await navigator.clipboard.writeText(value);
-    return true;
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // Fall through to the older WebView-friendly copy path.
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    return document.execCommand('copy');
   } catch {
     return false;
+  } finally {
+    textarea.remove();
   }
 }
 
@@ -166,7 +183,9 @@ function formatDateLabel(date: string | undefined) {
 }
 
 function formatRelativeTime(iso: string) {
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000));
+  const timestamp = Date.parse(iso);
+  if (Number.isNaN(timestamp)) return '刚刚';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
   if (seconds < 60) return '刚刚';
   if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
@@ -174,7 +193,9 @@ function formatRelativeTime(iso: string) {
 }
 
 function formatJournalDate(iso: string) {
-  const parts = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' }).formatToParts(new Date(iso));
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '刚刚';
+  const parts = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('month')} 月 ${get('day')} 日 · ${get('hour')}:${get('minute')}`;
 }
@@ -247,7 +268,36 @@ function MetricCard({ label, value, note, tone, icon }: { label: string; value: 
 }
 
 function SnapshotGallery({ onSave }: { onSave: (snapshot: (typeof GROWTH_SNAPSHOTS)[number]) => void }) {
-  return <section className="snapshots-card surface-card" aria-labelledby="snapshots-title"><div className="card-heading snapshots-heading"><div><p className="section-kicker"><span className="kicker-line" /> 共同成长快照</p><h2 id="snapshots-title">把每一次坚持，留成一张照片。</h2></div><span className="mini-label">3 MOMENTS</span></div><div className="snapshot-list">{GROWTH_SNAPSHOTS.map((snapshot) => <article className="snapshot-item" key={snapshot.image}><div className="snapshot-photo"><img src={snapshot.image} alt={snapshot.title} loading="lazy" /></div><div className="snapshot-copy"><span className="snapshot-stage">{snapshot.stage}</span><h3>{snapshot.title}</h3><p>{snapshot.note}</p></div><button className="snapshot-button" type="button" onClick={() => onSave(snapshot)} aria-label={`记录${snapshot.title}`}><Icon name="plus" size={14} /></button></article>)}</div></section>;
+  return (
+    <section className="snapshots-card surface-card" aria-labelledby="snapshots-title">
+      <div className="card-heading snapshots-heading">
+        <div>
+          <p className="section-kicker"><span className="kicker-line" /> 共同成长快照</p>
+          <h2 id="snapshots-title">把每一次坚持，留成一张照片。</h2>
+        </div>
+        <span className="mini-label">3 MOMENTS</span>
+      </div>
+      <div className="snapshot-list">
+        {GROWTH_SNAPSHOTS.map((snapshot) => (
+          <article className="snapshot-item" key={snapshot.image}>
+            <div className="snapshot-photo">
+              {/* This component also ships through the static GitHub Pages build. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={snapshot.image} alt={snapshot.title} loading="lazy" decoding="async" width={200} height={220} />
+            </div>
+            <div className="snapshot-copy">
+              <span className="snapshot-stage">{snapshot.stage}</span>
+              <h3>{snapshot.title}</h3>
+              <p>{snapshot.note}</p>
+            </div>
+            <button className="snapshot-button" type="button" onClick={() => onSave(snapshot)} aria-label={`记录${snapshot.title}`}>
+              <Icon name="plus" size={14} />
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function ViewHeader({ eyebrow, title, description, action, onAction }: { eyebrow: string; title: React.ReactNode; description: string; action?: string; onAction?: () => void }) {
@@ -266,19 +316,33 @@ function GardenView({ state, isSaving, watered, onWater, onNotify }: { state: Ha
   return <><ViewHeader eyebrow={`共享空间 · ${state?.room.code ?? '连接中'}`} title={<>花园正在<em>醒来。</em></>} description="这里记录着你们一起完成过的每一件小事。可以拖动视角，看看新叶长在哪里。" action="种下一颗种子" onAction={() => onNotify('新的种子会在完成下一项仪式后发芽。')} /><div className="garden-view-layout"><GardenWorld progress={state?.plant.progress ?? 0} plantStage={state?.plant.stage ?? 'I'} plantLabel={state?.plant.label ?? '刚刚发芽'} roomCode={state?.room.code ?? '连接中'} lastWateredLabel={state?.lastWateredLabel ?? '还没有记录'} partnerOnline={Boolean(state?.partnerOnline)} partnerName={state?.partner?.name ?? '等待伙伴'} watered={watered} disabled={isSaving} onWater={onWater} /><aside className="garden-side-panel surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 生长档案</p><h2>一块地，两个人。</h2></div><Icon name="garden" size={21} /></div><div className="growth-stat"><span className="mini-label">CURRENT STAGE</span><strong>{state?.plant.stage ?? 'I'} / {state?.plant.label ?? '刚刚发芽'}</strong><p>所有成长数据都来自这座花园的真实完成记录。</p></div><div className="growth-list"><div><span>已经浇水</span><strong>{metrics.waterCount} 次</strong></div><div><span>解锁植物</span><strong>{String(metrics.unlockedPlants).padStart(2, '0')} / 12</strong></div><div><span>共同专注</span><strong>{metrics.focusMinutes}m</strong></div></div><button className="dark-action" type="button" onClick={() => { void copyToClipboard(inviteUrl(state?.room.code ?? '')).then((copied) => onNotify(copied ? '邀请链接已复制，发给伙伴即可加入。' : '当前设备暂时不能复制，请到双人连接页分享房间码。')); }}><Icon name="link" size={16} /> 分享这座花园 <Icon name="arrow" size={15} /></button></aside></div></>;
 }
 
-function PairView({ state, isSaving, onNotify, onJoinRoom, onHighFive }: { state: HabiState | null; isSaving: boolean; onNotify: (message: string) => void; onJoinRoom: (code: string, name: string) => Promise<void>; onHighFive: () => void }) {
+function PairView({ state, isSaving, onNotify, onJoinRoom, onHighFive }: { state: HabiState | null; isSaving: boolean; onNotify: (message: string) => void; onJoinRoom: (code: string, name: string) => Promise<boolean>; onHighFive: () => void }) {
   const [code, setCode] = useState(inviteCodeFromUrl);
   const [name, setName] = useState('小满');
+  const [formError, setFormError] = useState('');
+  const inviteCode = inviteCodeFromUrl();
+  const displayRoomCode = inviteCode || state?.room.code || '连接中';
   const partner = state?.partner;
   const members = state?.members ?? [];
   const events = state?.events ?? [];
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!code.trim()) return;
-    await onJoinRoom(code, name);
-    setCode('');
+    const normalizedCode = code.trim().toUpperCase();
+    const normalizedName = name.trim();
+    if (!ROOM_CODE_PATTERN.test(normalizedCode)) {
+      setFormError('请输入有效的房间码，例如 TWN-AB12CD。');
+      return;
+    }
+    if (!normalizedName) {
+      setFormError('请先留下你的名字，伙伴才能认出你。');
+      return;
+    }
+    setFormError('');
+    const joined = await onJoinRoom(normalizedCode, normalizedName);
+    if (joined) setCode('');
+    else setFormError('这次没有绑定成功，请检查房间码后再试。');
   };
-  return <><ViewHeader eyebrow={`双人连接 · ${state?.room.code ?? '连接中'}`} title={<>两个人的习惯，<em>不必一个人扛。</em></>} description="实时同步彼此的完成状态，在对方需要的时候，送一滴水过去。" /><div className="pair-view-grid"><section className="pair-hero surface-card"><div className="pair-hero-top"><span className={`online-badge ${state?.partnerOnline ? '' : 'is-waiting'}`}><span className="live-dot" /> {state?.partnerOnline ? '在线 · 实时同步' : partner ? '已绑定 · 等待上线' : '等待伙伴加入'}</span><button className="quiet-icon-button" type="button" aria-label="更多连接设置" onClick={() => onNotify('房间码绑定只允许两位成员，数据保存在 D1。')}><Icon name="more" size={18} /></button></div><div className="pair-avatars"><div className="pair-avatar-wrap"><Avatar initials={state?.currentUser.initials ?? 'Y'} tone="sage" size="large" /><span className="avatar-status" /></div><div className="pair-line" /><div className="pair-avatar-wrap"><Avatar initials={partner?.initials ?? '?'} tone={partner ? 'clay' : 'lavender'} size="large" />{partner ? <span className={`avatar-status ${state?.partnerOnline ? '' : 'is-offline'}`} /> : null}</div></div><div className="pair-names"><strong>{state?.currentUser.name ?? '你'}</strong><span>+</span><strong>{partner?.name ?? '等待伙伴'}</strong></div><p className="pair-quote">“今天也一起走到这里。”</p><div className="pair-streak"><span>共同连续</span><strong>{state?.metrics.streakDays ?? 0}</strong><small>天</small><div className="streak-bars">{Array.from({ length: 14 }).map((_, index) => <span key={index} className={index >= (state?.metrics.streakDays ?? 0) ? 'is-soft' : ''} />)}</div></div><div className="pair-code-block"><div><span className="mini-label">SHARED ROOM CODE</span><small>{inviteCodeFromUrl() ? '邀请链接已带入，填写名字后即可加入' : '把这个链接发给第二个人'}</small></div><div className="pair-code-row"><strong>{state?.room.code ?? '连接中'}</strong><button type="button" onClick={() => { void copyToClipboard(inviteUrl(state?.room.code ?? '')).then((copied) => onNotify(copied ? '邀请链接已复制，发给伙伴即可加入。' : '当前设备暂时不能复制，请分享房间码。')); }}>复制邀请链接</button></div></div></section><section className="connection-details surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 连接详情</p><h2>一起完成，比完成更多。</h2></div><Icon name="link" size={21} /></div><div className="connection-members"><span className="mini-label">MEMBERS · {members.length} / 2</span>{members.map((member) => <div className="connection-member" key={member.id}><Avatar initials={member.initials} tone={member.isCurrentUser ? 'sage' : 'clay'} size="small" /><div><strong>{member.name}{member.isCurrentUser ? ' · 你' : ''}</strong><span>{member.isCurrentUser || state?.partnerOnline ? '最近在线' : '等待上线'}</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>)}{!partner ? <p className="empty-state">还差一个伙伴。输入房间码即可加入另一座花园。</p> : null}</div><form className="pair-join-form" onSubmit={(event) => { void handleSubmit(event); }}><div className="form-heading"><span className="mini-label">JOIN A GARDEN</span><small>你也可以在这里切换到别人的房间</small></div><label>房间码<input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="TWN-AB12" maxLength={13} autoComplete="off" /></label><label>你的名字<input value={name} onChange={(event) => setName(event.target.value)} placeholder="小满" maxLength={24} /></label><button className="dark-action" type="submit" disabled={isSaving || !code.trim()}><Icon name="link" size={16} /> {isSaving ? '正在绑定…' : '绑定这座花园'} <Icon name="arrow" size={15} /></button></form><div className="connection-events"><span className="mini-label">RECENT EVENTS</span>{events.length ? events.slice(0, 3).map((event) => <div className="connection-event" key={event.id}><Avatar initials={event.initials} tone={event.userId === state?.currentUser.id ? 'sage' : 'clay'} size="small" /><div><strong>{event.message}</strong><span>{formatRelativeTime(event.createdAt)} · 已保存</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>) : <p className="empty-state">完成一项仪式或浇一次水，这里就会留下第一条记录。</p>}</div><button className="dark-action" type="button" disabled={isSaving} onClick={onHighFive}><Icon name="heart" size={16} /> 送一个击掌 <Icon name="arrow" size={15} /></button></section></div></>;
+  return <><ViewHeader eyebrow={`双人连接 · ${displayRoomCode}`} title={<>两个人的习惯，<em>不必一个人扛。</em></>} description="实时同步彼此的完成状态，在对方需要的时候，送一滴水过去。" /><div className="pair-view-grid"><section className="pair-hero surface-card"><div className="pair-hero-top"><span className={`online-badge ${state?.partnerOnline ? '' : 'is-waiting'}`}><span className="live-dot" /> {state?.partnerOnline ? '在线 · 实时同步' : partner ? '已绑定 · 等待上线' : '等待伙伴加入'}</span><button className="quiet-icon-button" type="button" aria-label="更多连接设置" onClick={() => onNotify('房间码绑定只允许两位成员，数据保存在 D1。')}><Icon name="more" size={18} /></button></div><div className="pair-avatars"><div className="pair-avatar-wrap"><Avatar initials={state?.currentUser.initials ?? 'Y'} tone="sage" size="large" /><span className="avatar-status" /></div><div className="pair-line" /><div className="pair-avatar-wrap"><Avatar initials={partner?.initials ?? '?'} tone={partner ? 'clay' : 'lavender'} size="large" />{partner ? <span className={`avatar-status ${state?.partnerOnline ? '' : 'is-offline'}`} /> : null}</div></div><div className="pair-names"><strong>{state?.currentUser.name ?? '你'}</strong><span>+</span><strong>{partner?.name ?? '等待伙伴'}</strong></div><p className="pair-quote">“今天也一起走到这里。”</p><div className="pair-streak"><span>共同连续</span><strong>{state?.metrics.streakDays ?? 0}</strong><small>天</small><div className="streak-bars">{Array.from({ length: 14 }).map((_, index) => <span key={index} className={index >= (state?.metrics.streakDays ?? 0) ? 'is-soft' : ''} />)}</div></div><div className="pair-code-block"><div><span className="mini-label">SHARED ROOM CODE</span><small>{inviteCode ? '邀请链接已带入，填写名字后即可加入' : '把这个链接发给第二个人'}</small></div><div className="pair-code-row"><strong>{displayRoomCode}</strong><button type="button" onClick={() => { void copyToClipboard(inviteUrl(displayRoomCode)).then((copied) => onNotify(copied ? '邀请链接已复制，发给伙伴即可加入。' : '当前设备暂时不能复制，请分享房间码。')); }}>复制邀请链接</button></div></div></section><section className="connection-details surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 连接详情</p><h2>一起完成，比完成更多。</h2></div><Icon name="link" size={21} /></div><div className="connection-members"><span className="mini-label">MEMBERS · {members.length} / 2</span>{members.map((member) => <div className="connection-member" key={member.id}><Avatar initials={member.initials} tone={member.isCurrentUser ? 'sage' : 'clay'} size="small" /><div><strong>{member.name}{member.isCurrentUser ? ' · 你' : ''}</strong><span>{member.isCurrentUser || state?.partnerOnline ? '最近在线' : '等待上线'}</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>)}{!partner ? <p className="empty-state">还差一个伙伴。输入房间码即可加入另一座花园。</p> : null}</div><form className="pair-join-form" onSubmit={(event) => { void handleSubmit(event); }}><div className="form-heading"><span className="mini-label">JOIN A GARDEN</span><small>{inviteCode ? '邀请链接已带入；两个人需要使用不同浏览器身份' : '发给另一台设备；同一台设备请使用无痕窗口'}</small></div><label>房间码<input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setFormError(''); }} placeholder="TWN-AB12CD" maxLength={13} autoComplete="off" autoFocus={Boolean(inviteCode)} aria-invalid={Boolean(formError)} /></label><label>你的名字<input value={name} onChange={(event) => { setName(event.target.value); setFormError(''); }} placeholder="小满" maxLength={24} /></label>{formError ? <p className="form-error" role="alert">{formError}</p> : null}<button className="dark-action" type="submit" disabled={isSaving || !code.trim()}><Icon name="link" size={16} /> {isSaving ? '正在绑定…' : '绑定这座花园'} <Icon name="arrow" size={15} /></button></form><div className="connection-events"><span className="mini-label">RECENT EVENTS</span>{events.length ? events.slice(0, 3).map((event) => <div className="connection-event" key={event.id}><Avatar initials={event.initials} tone={event.userId === state?.currentUser.id ? 'sage' : 'clay'} size="small" /><div><strong>{event.message}</strong><span>{formatRelativeTime(event.createdAt)} · 已保存</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>) : <p className="empty-state">完成一项仪式或浇一次水，这里就会留下第一条记录。</p>}</div><button className="dark-action" type="button" disabled={isSaving} onClick={onHighFive}><Icon name="heart" size={16} /> 送一个击掌 <Icon name="arrow" size={15} /></button></section></div></>;
 }
 
 function JournalView({ entries, isSaving, onNotify, onCreateJournal }: { entries: HabiJournalEntry[]; isSaving: boolean; onNotify: (message: string) => void; onCreateJournal: (title: string, text: string) => Promise<void> }) {
@@ -301,7 +365,9 @@ function externalHeaders() {
   if (!HABI_API_ORIGIN || typeof window === 'undefined') return {};
   let userId = window.localStorage.getItem(HABI_USER_STORAGE_KEY);
   if (!userId) {
-    userId = window.crypto.randomUUID();
+    userId = typeof window.crypto?.randomUUID === 'function'
+      ? window.crypto.randomUUID()
+      : `habi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     window.localStorage.setItem(HABI_USER_STORAGE_KEY, userId);
   }
   const roomCode = window.localStorage.getItem(HABI_ROOM_STORAGE_KEY);
@@ -313,7 +379,13 @@ function externalHeaders() {
 
 async function requestHabiState(path: string, options?: RequestInit) {
   const response = await fetch(`${HABI_API_ORIGIN}${path}`, { ...options, cache: 'no-store', credentials: HABI_API_ORIGIN ? 'include' : 'same-origin', headers: { 'Content-Type': 'application/json', ...externalHeaders(), ...(options?.headers ?? {}) } });
-  const payload = await response.json() as HabiState | { error?: string };
+  const responseText = await response.text();
+  let payload: HabiState | { error?: string };
+  try {
+    payload = JSON.parse(responseText) as HabiState | { error?: string };
+  } catch {
+    throw new Error(response.ok ? '共享数据服务返回了无效响应。' : `共享数据服务暂时不可用（${response.status}）。`);
+  }
   if (!response.ok) throw new Error('error' in payload && payload.error ? payload.error : '连接花园数据失败。');
   const next = payload as HabiState;
   if (HABI_API_ORIGIN && typeof window !== 'undefined' && next.room?.code) window.localStorage.setItem(HABI_ROOM_STORAGE_KEY, next.room.code);
@@ -330,6 +402,7 @@ export default function HabiTogether() {
   const [dataError, setDataError] = useState('');
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | null>(null);
+  const requestInFlight = useRef(false);
 
   const notify = (message: string) => {
     setToast(message);
@@ -340,6 +413,8 @@ export default function HabiTogether() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+      if (!mounted || requestInFlight.current) return;
+      requestInFlight.current = true;
       try {
         const next = await requestHabiState('/api/habi/state');
         if (mounted) {
@@ -352,6 +427,8 @@ export default function HabiTogether() {
           setDataError(error instanceof Error ? error.message : '连接花园数据失败。');
           setIsLoading(false);
         }
+      } finally {
+        requestInFlight.current = false;
       }
     };
     void load();
@@ -370,15 +447,17 @@ export default function HabiTogether() {
   const completedCount = useMemo(() => data?.completedCount ?? 0, [data]);
   const tasks = data?.tasks ?? INITIAL_TASKS;
 
-  const mutate = async (path: string, body: Record<string, unknown>, successMessage?: string) => {
+  const mutate = async (path: string, body: Record<string, unknown>, successMessage?: string): Promise<HabiState | null> => {
     setIsSaving(true);
     try {
       const next = await requestHabiState(path, { method: 'POST', body: JSON.stringify(body) });
       setData(next);
       setDataError('');
       if (successMessage) notify(successMessage);
+      return next;
     } catch (error) {
       notify(error instanceof Error ? error.message : '保存失败，请稍后重试。');
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -389,7 +468,7 @@ export default function HabiTogether() {
   const highFive = () => { void mutate('/api/habi/high-five', {}, '击掌已送达伙伴的花园。'); };
   const createJournal = async (title: string, text: string) => { await mutate('/api/habi/journal', { title, text }, '这件小事已经留在你们的共同日记里。'); };
   const saveSnapshot = async (snapshot: (typeof GROWTH_SNAPSHOTS)[number]) => { await mutate('/api/habi/journal', { title: snapshot.title, text: `${snapshot.note}。来自共同成长快照。` }, `${snapshot.title} 已放进你们的成长日记。`); };
-  const joinRoom = async (code: string, name: string) => { await mutate('/api/habi/join', { code, name }, '已经绑定到这座花园，接下来一起完成吧。'); setActiveView('today'); };
+  const joinRoom = async (code: string, name: string) => { const next = await mutate('/api/habi/join', { code, name }, '已经绑定到这座花园，接下来一起完成吧。'); if (!next) return false; setActiveView('today'); return true; };
 
-  return <div className={`habi-shell ${isLoading ? 'is-loading' : ''}`}><aside className="habi-sidebar"><div><div className="brand-lockup"><LogoMark /><div><span className="brand-name">HabiTogether</span><span className="brand-tagline">shared habits, softer days</span></div></div><div className="sidebar-divider" /><p className="sidebar-label">工作台</p><nav className="primary-nav" aria-label="主导航">{NAV_ITEMS.map((item) => <button className={`nav-item ${activeView === item.id ? 'is-active' : ''}`} key={item.id} type="button" onClick={() => setActiveView(item.id)} aria-current={activeView === item.id ? 'page' : undefined}><span className="nav-icon"><Icon name={item.icon} size={17} /></span><span><strong>{item.label}</strong><small>{item.hint}</small></span>{activeView === item.id ? <span className="nav-active-mark" /> : null}</button>)}</nav></div><div className="sidebar-bottom"><div className="sidebar-weather"><div className="weather-icon"><Icon name="water" size={15} /></div><div><span>今日数据</span><strong>{completedCount} / 11 已完成</strong></div><span className="weather-arrow">↗</span></div><div className="sidebar-pair"><div className="avatar-stack"><Avatar initials={data?.currentUser.initials ?? 'Y'} tone="sage" size="small" />{data?.partner ? <Avatar initials={data.partner.initials} tone="clay" size="small" /> : null}</div><div><span>当前花园</span><strong>{data?.room.code ?? '连接中'}</strong></div><button type="button" aria-label="打开连接设置" onClick={() => setActiveView('pair')}><Icon name="more" size={16} /></button></div><div className="sidebar-footer"><span><span className={`footer-dot ${dataError ? 'is-error' : ''}`} /> {dataError ? '需要检查连接' : data ? 'D1 安全同步' : '连接数据库中'}</span><span>v0.5.0</span></div></div></aside><main className="habi-main"><header className="top-header"><div className="breadcrumb"><span>HABITOGETHER</span><i>/</i><strong>{NAV_ITEMS.find((item) => item.id === activeView)?.hint.toUpperCase()}</strong></div><div className="header-actions"><span className={`sync-status ${dataError ? 'is-error' : ''}`}><span className="live-dot" /> {dataError ? '数据库未连接' : isSaving ? '正在保存' : data ? (data.partnerOnline ? '和伙伴同步中' : '数据已保存') : '连接数据中'}</span><button className="header-icon-button" type="button" aria-label="搜索" onClick={() => notify('搜索会在下一版开放，先去看看今天的仪式吧。')}><Icon name="search" size={18} /></button><button className="header-icon-button has-notice" type="button" aria-label="通知" onClick={() => notify(data?.events[0]?.message ?? '完成第一项仪式后，这里会出现同步动态。')}><Icon name="bell" size={18} /></button><Avatar initials={data?.currentUser.initials ?? 'Y'} tone="sage" size="small" /></div></header><div className="habi-content">{dataError ? <div className="data-status-banner" role="alert"><span className="status-icon"><Icon name="lock" size={15} /></span><div><strong>暂时读不到共享数据</strong><p>{dataError} 本地页面仍可浏览，完成保存前请先配置 Sites 的 D1 绑定。</p></div><button type="button" onClick={() => window.location.reload()}>重试</button></div> : null}{activeView === 'today' ? <TodayView state={data} tasks={tasks} showAll={showAll} isSaving={isSaving} watered={watered} onToggle={toggleTask} onShowAll={() => setShowAll((current) => !current)} onNotify={notify} onWater={waterGarden} onSaveSnapshot={(snapshot) => { void saveSnapshot(snapshot); }} onNavigate={setActiveView} /> : null}{activeView === 'garden' ? <GardenView state={data} isSaving={isSaving} watered={watered} onWater={waterGarden} onNotify={notify} /> : null}{activeView === 'pair' ? <PairView state={data} isSaving={isSaving} onNotify={notify} onJoinRoom={joinRoom} onHighFive={highFive} /> : null}{activeView === 'journal' ? <JournalView entries={data?.journal ?? []} isSaving={isSaving} onNotify={notify} onCreateJournal={createJournal} /> : null}<footer className="content-footer"><span>MADE FOR TWO <i>·</i> CULTIVATE THE ORDINARY</span><span>{data ? 'D1 真实数据 · 每 5 秒同步' : '正在连接 D1 数据库'}</span></footer></div></main>{toast ? <div className="toast" role="status" aria-live="polite"><span className="toast-mark"><Icon name="check" size={14} /></span><span>{toast}</span></div> : null}</div>;
+  return <div className={`habi-shell ${isLoading ? 'is-loading' : ''}`}><aside className="habi-sidebar"><div><div className="brand-lockup"><LogoMark /><div><span className="brand-name">HabiTogether</span><span className="brand-tagline">shared habits, softer days</span></div></div><div className="sidebar-divider" /><p className="sidebar-label">工作台</p><nav className="primary-nav" aria-label="主导航">{NAV_ITEMS.map((item) => <button className={`nav-item ${activeView === item.id ? 'is-active' : ''}`} key={item.id} type="button" onClick={() => setActiveView(item.id)} aria-current={activeView === item.id ? 'page' : undefined}><span className="nav-icon"><Icon name={item.icon} size={17} /></span><span><strong>{item.label}</strong><small>{item.hint}</small></span>{activeView === item.id ? <span className="nav-active-mark" /> : null}</button>)}</nav></div><div className="sidebar-bottom"><div className="sidebar-weather"><div className="weather-icon"><Icon name="water" size={15} /></div><div><span>今日数据</span><strong>{completedCount} / 11 已完成</strong></div><span className="weather-arrow">↗</span></div><div className="sidebar-pair"><div className="avatar-stack"><Avatar initials={data?.currentUser.initials ?? 'Y'} tone="sage" size="small" />{data?.partner ? <Avatar initials={data.partner.initials} tone="clay" size="small" /> : null}</div><div><span>当前花园</span><strong>{data?.room.code ?? '连接中'}</strong></div><button type="button" aria-label="打开连接设置" onClick={() => setActiveView('pair')}><Icon name="more" size={16} /></button></div><div className="sidebar-footer"><span><span className={`footer-dot ${dataError ? 'is-error' : ''}`} /> {dataError ? '需要检查连接' : data ? 'D1 安全同步' : '连接数据库中'}</span><span>v0.5.0</span></div></div></aside><main className="habi-main"><header className="top-header"><div className="breadcrumb"><span>HABITOGETHER</span><i>/</i><strong>{NAV_ITEMS.find((item) => item.id === activeView)?.hint.toUpperCase()}</strong></div><div className="header-actions"><span className={`sync-status ${dataError ? 'is-error' : ''}`}><span className="live-dot" /> {dataError ? '共享数据异常' : isSaving ? '正在保存' : data ? (data.partnerOnline ? '和伙伴同步中' : '数据已保存') : '连接数据中'}</span><button className="header-icon-button" type="button" aria-label="搜索" onClick={() => notify('搜索会在下一版开放，先去看看今天的仪式吧。')}><Icon name="search" size={18} /></button><button className="header-icon-button has-notice" type="button" aria-label="通知" onClick={() => notify(data?.events[0]?.message ?? '完成第一项仪式后，这里会出现同步动态。')}><Icon name="bell" size={18} /></button><Avatar initials={data?.currentUser.initials ?? 'Y'} tone="sage" size="small" /></div></header><div className="habi-content">{dataError ? <div className="data-status-banner" role="alert"><span className="status-icon"><Icon name="lock" size={15} /></span><div><strong>暂时读不到共享数据</strong><p>{dataError} 本地页面仍可浏览，恢复连接后会自动重试。</p></div><button type="button" onClick={() => window.location.reload()}>重试</button></div> : null}{activeView === 'today' ? <TodayView state={data} tasks={tasks} showAll={showAll} isSaving={isSaving} watered={watered} onToggle={toggleTask} onShowAll={() => setShowAll((current) => !current)} onNotify={notify} onWater={waterGarden} onSaveSnapshot={(snapshot) => { void saveSnapshot(snapshot); }} onNavigate={setActiveView} /> : null}{activeView === 'garden' ? <GardenView state={data} isSaving={isSaving} watered={watered} onWater={waterGarden} onNotify={notify} /> : null}{activeView === 'pair' ? <PairView state={data} isSaving={isSaving} onNotify={notify} onJoinRoom={joinRoom} onHighFive={highFive} /> : null}{activeView === 'journal' ? <JournalView entries={data?.journal ?? []} isSaving={isSaving} onNotify={notify} onCreateJournal={createJournal} /> : null}<footer className="content-footer"><span>MADE FOR TWO <i>·</i> CULTIVATE THE ORDINARY</span><span>{data ? 'D1 真实数据 · 每 5 秒同步' : '正在连接 D1 数据库'}</span></footer></div></main>{toast ? <div className="toast" role="status" aria-live="polite"><span className="toast-mark"><Icon name="check" size={14} /></span><span>{toast}</span></div> : null}</div>;
 }
