@@ -178,6 +178,7 @@ function LogoMark() {
 function formatDateLabel(date: string | undefined) {
   if (!date) return '今天';
   const parsed = new Date(`${date}T12:00:00+08:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
   const weekday = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', timeZone: 'Asia/Shanghai' }).format(parsed);
   return `${weekday} · ${date.slice(5, 7)} 月 ${date.slice(8)} 日`;
 }
@@ -345,7 +346,7 @@ function PairView({ state, isSaving, onNotify, onJoinRoom, onHighFive }: { state
   return <><ViewHeader eyebrow={`双人连接 · ${displayRoomCode}`} title={<>两个人的习惯，<em>不必一个人扛。</em></>} description="实时同步彼此的完成状态，在对方需要的时候，送一滴水过去。" /><div className="pair-view-grid"><section className="pair-hero surface-card"><div className="pair-hero-top"><span className={`online-badge ${state?.partnerOnline ? '' : 'is-waiting'}`}><span className="live-dot" /> {state?.partnerOnline ? '在线 · 实时同步' : partner ? '已绑定 · 等待上线' : '等待伙伴加入'}</span><button className="quiet-icon-button" type="button" aria-label="更多连接设置" onClick={() => onNotify('房间码绑定只允许两位成员，数据保存在 D1。')}><Icon name="more" size={18} /></button></div><div className="pair-avatars"><div className="pair-avatar-wrap"><Avatar initials={state?.currentUser.initials ?? 'Y'} tone="sage" size="large" /><span className="avatar-status" /></div><div className="pair-line" /><div className="pair-avatar-wrap"><Avatar initials={partner?.initials ?? '?'} tone={partner ? 'clay' : 'lavender'} size="large" />{partner ? <span className={`avatar-status ${state?.partnerOnline ? '' : 'is-offline'}`} /> : null}</div></div><div className="pair-names"><strong>{state?.currentUser.name ?? '你'}</strong><span>+</span><strong>{partner?.name ?? '等待伙伴'}</strong></div><p className="pair-quote">“今天也一起走到这里。”</p><div className="pair-streak"><span>共同连续</span><strong>{state?.metrics.streakDays ?? 0}</strong><small>天</small><div className="streak-bars">{Array.from({ length: 14 }).map((_, index) => <span key={index} className={index >= (state?.metrics.streakDays ?? 0) ? 'is-soft' : ''} />)}</div></div><div className="pair-code-block"><div><span className="mini-label">SHARED ROOM CODE</span><small>{inviteCode ? '邀请链接已带入，填写名字后即可加入' : '把这个链接发给第二个人'}</small></div><div className="pair-code-row"><strong>{displayRoomCode}</strong><button type="button" onClick={() => { void copyToClipboard(inviteUrl(displayRoomCode)).then((copied) => onNotify(copied ? '邀请链接已复制，发给伙伴即可加入。' : '当前设备暂时不能复制，请分享房间码。')); }}>复制邀请链接</button></div></div></section><section className="connection-details surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 连接详情</p><h2>一起完成，比完成更多。</h2></div><Icon name="link" size={21} /></div><div className="connection-members"><span className="mini-label">MEMBERS · {members.length} / 2</span>{members.map((member) => <div className="connection-member" key={member.id}><Avatar initials={member.initials} tone={member.isCurrentUser ? 'sage' : 'clay'} size="small" /><div><strong>{member.name}{member.isCurrentUser ? ' · 你' : ''}</strong><span>{member.isCurrentUser || state?.partnerOnline ? '最近在线' : '等待上线'}</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>)}{!partner ? <p className="empty-state">还差一个伙伴。输入房间码即可加入另一座花园。</p> : null}</div><form className="pair-join-form" onSubmit={(event) => { void handleSubmit(event); }}><div className="form-heading"><span className="mini-label">JOIN A GARDEN</span><small>{inviteCode ? '邀请链接已带入；两个人需要使用不同浏览器身份' : '发给另一台设备；同一台设备请使用无痕窗口'}</small></div><label>房间码<input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setFormError(''); }} placeholder="TWN-AB12CD" maxLength={13} autoComplete="off" autoFocus={Boolean(inviteCode)} aria-invalid={Boolean(formError)} /></label><label>你的名字<input value={name} onChange={(event) => { setName(event.target.value); setFormError(''); }} placeholder="小满" maxLength={24} /></label>{formError ? <p className="form-error" role="alert">{formError}</p> : null}<button className="dark-action" type="submit" disabled={isSaving || !code.trim()}><Icon name="link" size={16} /> {isSaving ? '正在绑定…' : '绑定这座花园'} <Icon name="arrow" size={15} /></button></form><div className="connection-events"><span className="mini-label">RECENT EVENTS</span>{events.length ? events.slice(0, 3).map((event) => <div className="connection-event" key={event.id}><Avatar initials={event.initials} tone={event.userId === state?.currentUser.id ? 'sage' : 'clay'} size="small" /><div><strong>{event.message}</strong><span>{formatRelativeTime(event.createdAt)} · 已保存</span></div><span className="event-check"><Icon name="check" size={13} /></span></div>) : <p className="empty-state">完成一项仪式或浇一次水，这里就会留下第一条记录。</p>}</div><button className="dark-action" type="button" disabled={isSaving} onClick={onHighFive}><Icon name="heart" size={16} /> 送一个击掌 <Icon name="arrow" size={15} /></button></section></div></>;
 }
 
-function JournalView({ entries, isSaving, onNotify, onCreateJournal }: { entries: HabiJournalEntry[]; isSaving: boolean; onNotify: (message: string) => void; onCreateJournal: (title: string, text: string) => Promise<void> }) {
+function JournalView({ entries, isSaving, onNotify, onCreateJournal }: { entries: HabiJournalEntry[]; isSaving: boolean; onNotify: (message: string) => void; onCreateJournal: (title: string, text: string) => Promise<boolean> }) {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -354,9 +355,11 @@ function JournalView({ entries, isSaving, onNotify, onCreateJournal }: { entries
       onNotify('先写下标题和一句话，再保存这页日记。');
       return;
     }
-    await onCreateJournal(title, text);
-    setTitle('');
-    setText('');
+    const saved = await onCreateJournal(title, text);
+    if (saved) {
+      setTitle('');
+      setText('');
+    }
   };
   return <><ViewHeader eyebrow="成长日记 · 共同记录" title={<>把那些<em>微小的好事</em>留下来。</>} description="习惯不是一条直线，是你们一起走过的许多片刻。" action="写下今天" onAction={() => document.getElementById('journal-title')?.focus()} /><div className="journal-layout"><section className="journal-card surface-card"><div className="card-heading"><div><p className="section-kicker"><span className="kicker-line" /> 最近发生</p><h2>你们的共同时间线</h2></div><span className="mini-label">{entries.length} ENTRIES</span></div><div className="journal-list">{entries.length ? entries.map((entry) => <article className="journal-entry" key={entry.id}><span className={`journal-node node-${entry.tone}`} /><div><span className="journal-date">{formatJournalDate(entry.createdAt)} · {entry.authorName}</span><h3>{entry.title}</h3><p>{entry.text}</p></div><Icon name="chevron" size={17} /></article>) : <div className="empty-journal"><span className="note-sun"><Icon name="seed" size={16} /></span><strong>第一件好事，还等着被记下来。</strong><p>写一句话，保存后它会出现在你们两个人的时间线上。</p></div>}</div></section><aside className="journal-note surface-card"><span className="note-sun"><Icon name="sun" size={16} /></span><p className="section-kicker"><span className="kicker-line" /> 今日提示</p><h2>留一点时间，给正在发生的好事。</h2><p>不必写得完整。一句话、一个瞬间，也足够让未来的你们重新回到今天。</p><form className="journal-form" onSubmit={(event) => { void submit(event); }}><label htmlFor="journal-title">标题<input id="journal-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="今天也一起走到这里" maxLength={80} /></label><label htmlFor="journal-text">记下这一刻<textarea id="journal-text" value={text} onChange={(event) => setText(event.target.value)} placeholder="一句话就够了…" rows={4} maxLength={240} /></label><button className="text-button" type="submit" disabled={isSaving}><span>{isSaving ? '正在保存…' : '保存到共同日记'}</span><Icon name="arrow" size={15} /></button></form></aside></div></>;
 }
@@ -402,7 +405,8 @@ export default function HabiTogether() {
   const [dataError, setDataError] = useState('');
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | null>(null);
-  const requestInFlight = useRef(false);
+  const apiInFlight = useRef(false);
+  const wateredTimer = useRef<number | null>(null);
 
   const notify = (message: string) => {
     setToast(message);
@@ -413,8 +417,8 @@ export default function HabiTogether() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      if (!mounted || requestInFlight.current) return;
-      requestInFlight.current = true;
+      if (!mounted || apiInFlight.current) return;
+      apiInFlight.current = true;
       try {
         const next = await requestHabiState('/api/habi/state');
         if (mounted) {
@@ -428,7 +432,7 @@ export default function HabiTogether() {
           setIsLoading(false);
         }
       } finally {
-        requestInFlight.current = false;
+        apiInFlight.current = false;
       }
     };
     void load();
@@ -444,10 +448,20 @@ export default function HabiTogether() {
     };
   }, []);
 
+  useEffect(() => () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    if (wateredTimer.current) window.clearTimeout(wateredTimer.current);
+  }, []);
+
   const completedCount = useMemo(() => data?.completedCount ?? 0, [data]);
   const tasks = data?.tasks ?? INITIAL_TASKS;
 
   const mutate = async (path: string, body: Record<string, unknown>, successMessage?: string): Promise<HabiState | null> => {
+    if (apiInFlight.current) {
+      notify('正在同步上一条操作，请稍后再试。');
+      return null;
+    }
+    apiInFlight.current = true;
     setIsSaving(true);
     try {
       const next = await requestHabiState(path, { method: 'POST', body: JSON.stringify(body) });
@@ -460,13 +474,23 @@ export default function HabiTogether() {
       return null;
     } finally {
       setIsSaving(false);
+      apiInFlight.current = false;
     }
   };
 
   const toggleTask = (task: Task) => { void mutate('/api/habi/task', { taskId: task.id, completed: !task.completed }, task.completed ? `${task.title} 已撤回，数据已保存。` : `${task.title} 已完成，并同步给伙伴。`); };
-  const waterGarden = () => { setWatered(true); window.setTimeout(() => setWatered(false), 2400); void mutate('/api/habi/water', {}, '你们一起给花园浇了水。记录已保存。'); };
+  const waterGarden = async () => {
+    const next = await mutate('/api/habi/water', {}, '你们一起给花园浇了水。记录已保存。');
+    if (!next) return;
+    setWatered(true);
+    if (wateredTimer.current) window.clearTimeout(wateredTimer.current);
+    wateredTimer.current = window.setTimeout(() => {
+      setWatered(false);
+      wateredTimer.current = null;
+    }, 2400);
+  };
   const highFive = () => { void mutate('/api/habi/high-five', {}, '击掌已送达伙伴的花园。'); };
-  const createJournal = async (title: string, text: string) => { await mutate('/api/habi/journal', { title, text }, '这件小事已经留在你们的共同日记里。'); };
+  const createJournal = async (title: string, text: string) => Boolean(await mutate('/api/habi/journal', { title, text }, '这件小事已经留在你们的共同日记里。'));
   const saveSnapshot = async (snapshot: (typeof GROWTH_SNAPSHOTS)[number]) => { await mutate('/api/habi/journal', { title: snapshot.title, text: `${snapshot.note}。来自共同成长快照。` }, `${snapshot.title} 已放进你们的成长日记。`); };
   const joinRoom = async (code: string, name: string) => { const next = await mutate('/api/habi/join', { code, name }, '已经绑定到这座花园，接下来一起完成吧。'); if (!next) return false; setActiveView('today'); return true; };
 

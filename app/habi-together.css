@@ -468,7 +468,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .brand-name { font-size: 15px; }
   .brand-tagline { display: none; }
   .primary-nav { flex: 0 0 auto; }
-  .nav-item { min-height: 34px; padding: 0 7px; border-radius: 9px; }
+  .nav-item { min-height: 44px; padding: 0 8px; border-radius: 9px; }
   .nav-item strong { font-size: 10px; }
   .nav-icon { display: none; }
   .top-header { min-height: 57px; padding: 0 15px; }
@@ -477,7 +477,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .breadcrumb { font-size: 8px; }
   .header-actions { gap: 5px; }
   .sync-status { display: none; }
-  .header-icon-button { width: 31px; height: 31px; }
+  .header-icon-button { width: 40px; height: 40px; }
   .habi-content { padding: 26px 15px 30px; }
   .view-header { align-items: flex-start; flex-direction: column; gap: 18px; margin-bottom: 22px; }
   .view-header h1 { font-size: clamp(40px, 13vw, 57px); }
@@ -490,15 +490,16 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .pair-presence-actions { align-items: flex-start; flex-wrap: wrap; justify-content: flex-start; }
   .pair-presence-actions > span { width: 100%; text-align: left; }
   .presence-settings-button,
-  .presence-link-button { flex: 1; justify-content: center; }
+  .presence-link-button { flex: 1; justify-content: center; min-height: 44px; }
   .today-grid { gap: 12px; }
   .task-card { padding: 21px 16px 14px; border-radius: 15px; }
   .card-heading h2 { font-size: 22px; }
   .task-count strong { font-size: 34px; }
-  .task-row { grid-template-columns: 28px minmax(0, 1fr) 27px; gap: 9px; min-height: 58px; }
+  .task-row { grid-template-columns: 28px minmax(0, 1fr) 40px; gap: 7px; min-height: 64px; }
   .task-icon { width: 27px; height: 27px; }
   .task-title { font-size: 11px; }
   .task-detail { font-size: 7px; }
+  .task-check { width: 40px; height: 40px; border-radius: 11px; }
   .garden-card,
   .garden-card.is-compact { min-height: 580px; border-radius: 16px; }
   .garden-topline { top: 21px; right: 20px; left: 20px; }
@@ -513,8 +514,8 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .garden-bottom-copy h2 { font-size: 38px; }
   .garden-subtitle { margin: 10px 0 19px; font-size: 10px; line-height: 1.45; }
   .garden-actions { right: 20px; bottom: 25px; }
-  .garden-water-button { min-height: 38px; padding: 0 10px; font-size: 10px; }
-  .garden-mood-button { font-size: 7px; }
+  .garden-water-button { min-height: 44px; padding: 0 12px; font-size: 10px; }
+  .garden-mood-button { min-height: 40px; padding: 0 5px; font-size: 7px; }
   .plant-status-card { right: 20px; bottom: 111px; width: 205px; min-height: 69px; grid-template-columns: 45px minmax(0, 1fr) 31px; padding: 8px; }
   .plant-status-art { height: 51px; }
   .plant-status-copy strong { font-size: 14px; }
@@ -529,6 +530,12 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .garden-side-panel,
   .connection-details,
   .journal-card { padding: 20px; }
+  .quiet-icon-button { width: 40px; min-height: 40px; }
+  .data-status-banner button { min-height: 40px; }
+  .pair-code-row button { min-height: 40px; }
+  .pair-join-form input,
+  .journal-form input,
+  .journal-form textarea { min-height: 44px; }
   .garden-side-panel h2,
   .connection-details h2,
   .journal-card h2 { font-size: 23px; }
@@ -537,6 +544,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .pair-quote { margin-bottom: 42px; }
   .journal-note h2 { font-size: 28px; }
   .content-footer { align-items: flex-start; flex-direction: column; gap: 8px; min-height: auto; font-size: 7px; line-height: 1.5; }
+  .snapshot-button { width: 40px; height: 40px; border-radius: 10px; }
   .content-footer span:last-child { display: none; }
   .toast { right: 16px; bottom: 16px; }
 }
