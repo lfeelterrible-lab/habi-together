@@ -468,7 +468,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .brand-name { font-size: 15px; }
   .brand-tagline { display: none; }
   .primary-nav { flex: 0 0 auto; }
-  .nav-item { min-height: 44px; padding: 0 8px; border-radius: 9px; }
+  .nav-item { min-width: 44px; min-height: 44px; justify-content: center; padding: 0 8px; border-radius: 9px; }
   .nav-item strong { font-size: 10px; }
   .nav-icon { display: none; }
   .top-header { min-height: 57px; padding: 0 15px; }
@@ -515,7 +515,7 @@ a:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .garden-subtitle { margin: 10px 0 19px; font-size: 10px; line-height: 1.45; }
   .garden-actions { right: 20px; bottom: 25px; }
   .garden-water-button { min-height: 44px; padding: 0 12px; font-size: 10px; }
-  .garden-mood-button { min-height: 40px; padding: 0 5px; font-size: 7px; }
+  .garden-mood-button { min-width: 44px; min-height: 40px; justify-content: center; padding: 0 5px; font-size: 7px; }
   .plant-status-card { right: 20px; bottom: 111px; width: 205px; min-height: 69px; grid-template-columns: 45px minmax(0, 1fr) 31px; padding: 8px; }
   .plant-status-art { height: 51px; }
   .plant-status-copy strong { font-size: 14px; }
